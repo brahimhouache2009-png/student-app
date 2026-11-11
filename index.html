@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ذاكرة التواريخ - تطبيق الطالب الذكي</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary: #4f46e5; --primary-dark: #4338ca; }
+    body { font-family: 'Tajawal', 'Inter', sans-serif; background-color: #f1f5f9; color: #0f172a; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+    .perspective-1000 { perspective: 1000px; }
+    .transform-style-3d { transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .rotate-y-180 { transform: rotateY(180deg); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes popIn { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+    .animate-pop { animation: popIn 0.22s ease-out forwards; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start sm:py-6 bg-stone-100">
+
+  <div class="w-full max-w-md bg-white sm:rounded-xl sm:shadow-sm sm:border sm:border-zinc-300 min-h-screen sm:min-h-[820px] flex flex-col justify-between relative overflow-hidden">
+
+    <!-- Top App Header -->
+    <header class="bg-zinc-900 text-zinc-100 px-5 pt-5 pb-4 border-b border-zinc-800 z-20">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 id="headerStudentTitle" class="text-lg font-extrabold tracking-tight">ذاكرة التواريخ</h1>
+          <p class="text-xs text-zinc-400">احفظ التواريخ والاختبارات بذكاء</p>
+        </div>
+        <button id="btnLogout" type="button" class="p-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold px-2.5 transition">خروج</button>
+      </div>
+
+      <!-- Mini Stats Bar -->
+      <div class="grid grid-cols-3 gap-2 mt-4 bg-white/10 rounded-lg p-2.5 backdrop-blur-sm border border-white/10 text-center">
+        <div>
+          <div class="text-[11px] text-zinc-400">إجمالي التواريخ</div>
+          <div id="statTotal" class="text-base font-extrabold text-white">0</div>
+        </div>
+        <div class="border-x border-white/15">
+          <div class="text-[11px] text-zinc-400">تم إتقانها</div>
+          <div id="statMastered" class="text-base font-extrabold text-zinc-200">0</div>
+        </div>
+        <div>
+          <div class="text-[11px] text-zinc-400">دقة الاختبارات</div>
+          <div id="statAccuracy" class="text-base font-extrabold text-zinc-200">0%</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
+
+      <!-- VIEW 1: MANAGE & ADD DATES -->
+      <section id="view-home" class="space-y-4 animate-pop">
+        <div class="bg-slate-50 border border-slate-200/90 rounded-lg p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3">
+            <h2 id="formTitle" class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-zinc-900"></span>
+              <span>إضافة تاريخ وحدث جديد</span>
+            </h2>
+            <button id="btnCancelEdit" type="button" class="hidden text-xs text-rose-600 font-semibold hover:underline">إلغاء التعديل</button>
+          </div>
+
+          <form id="dateForm" class="space-y-3">
+            <input type="hidden" id="editItemId" value="" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">التاريخ أو السنة *</label>
+                <input id="inputDate" type="text" required placeholder="مثال: 1 نوفمبر 1954"
+                  class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-zinc-900 outline-none" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">التصنيف</label>
+                <select id="inputCategory" class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none">
+                  <option value="تاريخ">تاريخ</option>
+                  <option value="دراسة">الجغرافيا</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">الحدث المرتبط *</label>
+              <input id="inputEvent" type="text" required placeholder="مثال: اندلاع الثورة الجزائرية"
+                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">تلميح (اختياري)</label>
+              <input id="inputHint" type="text" placeholder="تلميح للتذكر"
+                class="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none" />
+            </div>
+            <div class="flex items-center justify-between pt-1">
+              <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input id="inputImportant" type="checkbox" class="w-4 h-4 rounded text-zinc-900" />
+                <span class="text-xs font-medium text-slate-700">تاريخ مهم</span>
+              </label>
+              <button type="submit" class="bg-zinc-900 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition">حفظ التاريخ +</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex gap-2">
+            <input id="searchInput" type="text" placeholder="ابحث عن تاريخ أو حدث..." class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs outline-none" />
+            <select id="filterStatus" class="rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none">
+              <option value="all">كل الحالات</option>
+              <option value="important">المهمة</option>
+              <option value="learning">قيد الحفظ</option>
+              <option value="mastered">متقنة</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="datesList" class="space-y-2.5"></div>
+      </section>
+
+      <!-- VIEW 2: QUIZ -->
+      <section id="view-quiz" class="hidden space-y-4 animate-pop">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-800">إعدادات الكويز والأسئلة</h2>
+            <span id="quizScoreBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-zinc-200 text-zinc-900">النقاط: 0</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5 bg-slate-200/70 p-1 rounded-xl text-xs font-bold">
+            <button type="button" data-qstyle="mcq" class="qstyle-btn py-2 rounded-lg bg-white text-zinc-900 shadow-sm transition">اختيار متعدد</button>
+            <button type="button" data-qstyle="written" class="qstyle-btn py-2 rounded-lg text-slate-600 transition">سؤال وجواب</button>
+            <button type="button" data-qstyle="match" class="qstyle-btn py-2 rounded-lg text-slate-600 transition">مطابقة</button>
+          </div>
+        </div>
+        <div id="quizStage" class="bg-white border border-slate-200 rounded-lg p-4 shadow-sm min-h-[300px] flex flex-col justify-between"></div>
+      </section>
+
+      <!-- VIEW 3: FLASHCARDS -->
+      <section id="view-flashcards" class="hidden space-y-4 animate-pop">
+        <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2.5">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">بطاقات الحفظ السريع</h2>
+            <p class="text-[11px] text-slate-500">اضغط على البطاقة لقلبها</p>
+          </div>
+          <span id="flashCounter" class="text-xs font-bold bg-zinc-200 text-zinc-900 px-2.5 py-1 rounded-full">1 / 1</span>
+        </div>
+        <div id="flashcardBox" class="perspective-1000 w-full h-64 cursor-pointer select-none">
+          <div id="flashcardInner" class="w-full h-full relative transform-style-3d rounded-xl shadow-md">
+            <div class="absolute inset-0 backface-hidden bg-zinc-900 text-white rounded-xl p-6 flex flex-col justify-between items-center text-center">
+              <span id="fcCategoryFront" class="px-2.5 py-0.5 rounded-full bg-white/15 text-xs">تاريخ</span>
+              <div class="my-auto"><div id="fcDateText" class="text-3xl font-extrabold"></div></div>
+              <div class="text-[11px] text-zinc-400">اضغط للقلب</div>
+            </div>
+            <div class="absolute inset-0 backface-hidden rotate-y-180 bg-zinc-800 text-white rounded-xl p-6 flex flex-col justify-between items-center text-center">
+              <span id="fcDateSmall" class="text-amber-400 font-bold text-xs"></span>
+              <div class="my-auto space-y-2">
+                <div id="fcEventText" class="text-lg font-bold"></div>
+                <div id="fcHintText" class="text-xs text-zinc-300 bg-white/10 px-3 py-1.5 rounded-xl"></div>
+              </div>
+              <div class="text-[11px] text-slate-400">للبطاقة السابقة/التالية</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnFcMarkLearning" type="py-2.5 px-3 rounded-xl bg-white text-zinc-800 border text-xs font-bold">يحتاج مراجعة</button>
+          <button id="btnFcMarkMastered" type="py-2.5 px-3 rounded-xl bg-zinc-900 text-white text-xs font-bold">تم الحفظ</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnFcPrev" class="flex-1 py-2 bg-slate-100 text-xs font-bold rounded-xl">السابق</button>
+          <button id="btnFcShuffle" class="py-2 px-4 bg-slate-100 text-xs font-bold rounded-xl">عشوائي</button>
+          <button id="btnFcNext" class="flex-1 py-2 bg-slate-100 text-xs font-bold rounded-xl">التالي</button>
+        </div>
+      </section>
+
+      <!-- VIEW 4: TIMELINE -->
+      <section id="view-timeline" class="hidden space-y-4 animate-pop">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-3.5 flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800">الخط الزمني للأحداث</h2>
+          <button id="btnReverseTimeline" class="text-xs font-bold bg-white border px-3 py-1.5 rounded-xl">عكس الترتيب</button>
+        </div>
+        <div id="timelineContainer" class="relative pr-4 border-r-2 border-zinc-300 space-y-4 mr-2"></div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="sticky bottom-0 w-full bg-white/95 backdrop-blur border-t border-slate-200 px-2 py-1.5 grid grid-cols-4 gap-1 z-20">
+      <button data-tab="home" class="nav-btn flex flex-col items-center py-1.5 rounded-xl text-zinc-900 bg-zinc-100 font-bold"><span class="text-xs">التواريخ</span></button>
+      <button data-tab="quiz" class="nav-btn flex flex-col items-center py-1.5 rounded-xl text-slate-500 font-medium"><span class="text-xs">الاختبار</span></button>
+      <button data-tab="flashcards" class="nav-btn flex flex-col items-center py-1.5 rounded-xl text-slate-500 font-medium"><span class="text-xs">البطاقات</span></button>
+      <button data-tab="timeline" class="nav-btn flex flex-col items-center py-1.5 rounded-xl text-slate-500 font-medium"><span class="text-xs">الخط الزمني</span></button>
+    </nav>
+
+    <!-- Student Login Overlay (Code 2009) -->
+    <div id="loginOverlay" class="fixed inset-0 bg-stone-100 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-xl max-w-sm w-full p-6 shadow-sm space-y-4 animate-pop border border-zinc-300">
+        <div class="text-center space-y-1">
+          <h2 class="text-lg font-extrabold text-zinc-900">دخول منصة الطالب</h2>
+          <p class="text-xs text-zinc-500">أدخل اسمك وكود الدخول</p>
+        </div>
+        <form id="loginForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1">اسم الطالب *</label>
+            <input id="inputStudentName" type="text" required placeholder="مثال: محمد بن عيسى" class="w-full rounded-lg border border-zinc-300 px-3 py-2 text-xs outline-none focus:border-zinc-900" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-zinc-700 mb-1">كود المرور</label>
+            <input id="loginCode" type="password" inputmode="numeric" class="w-full rounded-lg border border-zinc-300 px-3.5 py-2.5 text-sm text-center tracking-widest outline-none focus:border-zinc-900" dir="ltr" />
+          </div>
+          <div id="loginErrorMsg" class="hidden text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg text-center">الكود غير صحيح</div>
+          <button type="submit" class="w-full bg-zinc-2009 text-white font-bold text-sm py-3 rounded-lg">دخول التطبيق</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="toastBox" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-full"></div>
+  </div>
+
+  <script>
+    const SHARED_KEY = 'date_memory_shared_system_v4';
+    let state = {
+      items: [], activeTab: 'home', selectedCategory: 'all', filterStatus: 'all', searchQuery: '',
+      quizStyle: 'mcq', quizDirection: 'mixed', quizTotalAnswered: 0, quizCorrectCount: 0, quizScore: 0,
+      currentQuestion: null, flashIndex: 0, flashFlipped: false, timelineAsc: true,
+      isLoggedIn: false, studentName: ''
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(SHARED_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.items)) state.items = parsed.items;
+        }
+      } catch (e) {}
+      if (state.items.length === 0) {
+        state.items = [
+          { id: 'd1', date: '1 نوفمبر 1954', event: 'اندلاع الثورة التحريرية الجزائرية', category: 'تاريخ', hint: 'بداية الكفاح المسلح', important: true, mastered: false }
+        ];
+      }
+    }
+
+    function saveState(actionName, details) {
+      try {
+        localStorage.setItem(SHARED_KEY, JSON.stringify({
+          items: state.items,
+          quizTotalAnswered: state.quizTotalAnswered,
+          quizCorrectCount: state.quizCorrectCount,
+          quizScore: state.quizScore
+        }));
+      } catch (e) {}
+
+      // إرسال تفاعل الطالب ونشاطه مباشرة للمعلم
+      if (state.isLoggedIn) {
+        try {
+          const logKey = 'teacher_students_monitoring_logs';
+          let existingLogs = [];
+          const rawLogs = localStorage.getItem(logKey);
+          if (rawLogs) existingLogs = JSON.parse(rawLogs);
+
+          existingLogs.unshift({
+            id: 'log_' + Date.now(),
+            studentName: state.studentName,
+            action: actionName || 'تفاعل مع التطبيق',
+            detail: details || 'قام بتحديث أو إضافة تاريخ',
+            time: new Date().toLocaleTimeString('ar-DZ', {hour: '2-digit', minute:'2-digit', second:'2-digit'}),
+            dateStr: new Date().toLocaleDateString('ar-DZ')
+          });
+          localStorage.setItem(logKey, JSON.stringify(existingLogs.slice(0, 100)));
+        } catch (e) {}
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toastBox');
+      toast.textContent = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(window.__tTimer);
+      window.__tTimer = setTimeout(() => toast.classList.add('hidden'), 2000);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // تفعيل كل مميزات الطالب الواسعة
+    function renderStats() {
+      const total = state.items.length;
+      const mastered = state.items.filter(i => i.mastered).length;
+      const acc = state.quizTotalAnswered > 0 ? Math.round((state.quizCorrectCount / state.quizTotalAnswered) * 100) : 0;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statMastered').textContent = mastered;
+      document.getElementById('statAccuracy').textContent = acc + '%';
+      document.getElementById('quizScoreBadge').textContent = 'النقاط: ' + state.quizScore;
+    }
+
+    function renderDatesList() {
+      const listEl = document.getElementById('datesList');
+      const filtered = state.items.filter(item => {
+        if (state.filterStatus === 'important' && !item.important) return false;
+        if (state.filterStatus === 'learning' && item.mastered) return false;
+        if (state.filterStatus === 'mastered' && !item.mastered) return false;
+        if (state.searchQuery.trim() !== '') {
+          const q = state.searchQuery.trim().toLowerCase();
+          if (!item.date.toLowerCase().includes(q) && !item.event.toLowerCase().includes(q)) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500 bg-white rounded-xl border">لا توجد تواريخ مطابقة</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map(item => `
+        <div class="bg-white border rounded-lg p-3.5 shadow-sm space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-1 rounded-lg bg-zinc-900 text-white text-xs font-bold">${escapeHtml(item.date)}</span>
+            <div class="flex items-center gap-1">
+              <button data-act="master" data-id="${item.id}" class="text-[11px] font-bold px-2 py-1 rounded border ${item.mastered ? 'bg-zinc-900 text-white' : 'bg-slate-50'}">${item.mastered ? 'متقن' : 'قيد الحفظ'}</button>
+            </div>
+          </div>
+          <div class="text-sm font-bold text-slate-800">${escapeHtml(item.event)}</div>
+        </div>
+      `).join('');
+    }
+
+    // إعدادات الكويز والبطاقات
+    function switchTab(tabName) {
+      state.activeTab = tabName;
+      ['home', 'quiz', 'flashcards', 'timeline'].forEach(t => {
+        document.getElementById('view-' + t).classList.toggle('hidden', t !== tabName);
+      });
+      if (tabName === 'quiz') generateNewQuestion();
+      if (tabName === 'flashcards') renderFlashcard();
+      if (tabName === 'timeline') renderTimeline();
+    }
+
+    function generateNewQuestion() {
+      const stage = document.getElementById('quizStage');
+      if (state.items.length < 2) {
+        stage.innerHTML = `<div class="text-center py-8 text-xs font-bold">أضف تاريخين على الأقل لبدء الاختبار</div>`;
+        return;
+      }
+      const target = state.items[Math.floor(Math.random() * state.items.length)];
+      const others = state.items.filter(i => i.id !== target.id).sort(() => Math.random() - 0.5).slice(0, 3);
+      const options = [...others, target].sort(() => Math.random() - 0.5);
+      state.currentQuestion = { target, options, answered: false };
+
+      stage.innerHTML = `
+        <div class="space-y-4">
+          <div class="bg-zinc-100 p-4 rounded-lg text-center space-y-1">
+            <div class="text-xs text-slate-500">متى وقع هذا الحدث؟</div>
+            <div class="text-base font-extrabold text-slate-900">${escapeHtml(target.event)}</div>
+          </div>
+          <div class="space-y-2">
+            ${options.map(opt => `
+              <button data-opt="\${opt.id}" class="mcq-opt w-full text-right p-3 rounded-xl border bg-white text-xs font-bold hover:border-zinc-900">\${escapeHtml(opt.date)}</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      stage.querySelectorAll('.mcq-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (state.currentQuestion.answered) return;
+          state.currentQuestion.answered = true;
+          state.quizTotalAnswered++;
+          const correct = btn.getAttribute('data-opt') === target.id;
+          if (correct) {
+            state.quizCorrectCount++;
+            state.quizScore += 10;
+            showToast('إجابة صحيحة (+10 نقاط)');
+          } else {
+            showToast('إجابة خاطئة');
+          }
+          saveState('إجراء اختبار', `أجاب على كويز بـ ${correct ? 'نجاح' : 'خطأ'}`);
+          renderStats();
+          setTimeout(generateNewQuestion, 1200);
+        });
+      });
+    }
+
+    function renderFlashcard() {
+      if (state.items.length === 0) return;
+      if (state.flashIndex >= state.items.length) state.flashIndex = 0;
+      const item = state.items[state.flashIndex];
+      document.getElementById('flashCounter.textContent = `${state.flashIndex + 1} / ${state.items.length}`;');
+      document.getElementById('fcDateText').textContent = item.date;
+      document.getElementById('fcDateSmall').textContent = item.date;
+      document.getElementById('fcEventText').textContent = item.event;
+    }
+
+    function renderTimeline() {
+      const container = document.getElementById('timelineContainer');
+      container.innerHTML = state.items.map(i => `
+        <div class="bg-white border rounded-lg p-3 relative">
+          <span class="absolute -right-[23px] top-4 w-3.5 h-3.5 rounded-full bg-zinc-900 border-2 border-white"></span>
+          <div class="text-xs font-extrabold">${escapeHtml(i.date)}</div>
+          <div class="text-xs font-bold text-slate-800">${escapeHtml(i.event)}</div>
+        </div>
+      `).join('');
+    }
+
+    // الأحدث وتسجيل الدخول
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const name = document.getElementById('inputStudentName').value.trim();
+      const code = document.getElementById('loginCode').value.trim();
+      if (code === '2009' && name) {
+        state.isLoggedIn = true;
+        state.studentName = name;
+        document.getElementById('loginOverlay').classList.add('hidden');
+        document.getElementById('headerStudentTitle').textContent = 'الطالب: ' + name;
+        saveState('تسجيل الدخول', `دخل الطالب ${name} إلى التطبيق`);
+        renderStats();
+        renderDatesList();
+        showToast('مرحباً بك يا ' + name);
+      } else {
+        document.getElementById('loginErrorMsg').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      saveState('تسجيل الخروج', `خرج الطالب ${state.studentName} من التطبيق`);
+      state.isLoggedIn = false;
+      document.getElementById('loginOverlay').classList.remove('hidden');
+    });
+
+    document.getElementById('dateForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const d = document.getElementById('inputDate').value.trim();
+      const ev = document.getElementById('inputEvent').value.trim();
+      if (!d || !ev) return;
+      state.items.unshift({ id: 'st_' + Date.now(), date: d, event: ev, category: document.getElementById('inputCategory').value, mastered: false });
+      saveState('إضافة تاريخ جديد', `أضاف التاريخ: ${d} - الحدث: ${ev}`);
+      document.getElementById('inputDate').value = '';
+      document.getElementById('inputEvent').value = '';
+      renderStats();
+      renderDatesList();
+      showToast('تم الحفظ وإرسال التنبيه للمعلم بنجاح');
+    });
+
+    document.getElementById('datesList').addEventListener('click', e => {
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const item = state.items.find(i => i.id === id);
+      if (item) {
+        item.mastered = !item.mastered;
+        saveState('تحديث حالة الحفظ', `عدل حالة التاريخ ${item.date} إلى ${item.mastered ? 'متقن' : 'قيد الحفظ'}`);
+        renderStats();
+        renderDatesList();
+      }
+    });
+
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+    });
+
+    loadState();
+  </script>
+</body>
+</html>
